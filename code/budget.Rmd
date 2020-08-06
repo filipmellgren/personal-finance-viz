@@ -1,0 +1,84 @@
+---
+title: "Overview"
+author: "Filip Mellgren"
+date: '2020-07-26'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(rio)
+library(tidyverse)
+```
+
+```{r hyperparams}
+time_hz <- 16
+year <- 1:time_hz
+```
+
+```{r wage}
+# Assume these values for labour income.
+wage_g <- 0.05
+wage <- rep(20000*12, length(year))*exp(wage_g*year)
+```
+
+```{r housing}
+housing <- 0
+```
+
+```{r consumption}
+consumption <- 0
+```
+
+```{r amortization}
+
+```
+
+
+```{r csn}
+# Data was copied from a CSN and includes both interest rate payments and amortizations.
+# Consequently, it is stand alone and not broken into components
+csn_cf <- import("../data/csn.csv") %>% 
+  select(csn_cf) %>% filter(row_number()<=time_hz)
+```
+
+```{r interest_payments}
+mortgage <- rep(1400000, time_hz)
+mortgage_rate <- rep(0.0119, time_hz)
+
+loans <- cbind(mortgage)
+interest_rates <- cbind(mortgage_rate)
+
+interest <- rowSums(loans*interest_rates)
+```
+
+```{r taxes}
+taxes <- 0
+```
+
+```{r neg_cf}
+neg_cf <- housing + consumption + csn_cf + interest + taxes
+```
+
+
+```{r savings}
+source("savings.R")
+asset_g <- 0.07
+consumption <- rep(10000*12, length(year))
+asset_start <- 6.5*10^5
+
+df <- as_tibble(cbind(year, wage, neg_cf))
+df <- df %>% mutate(savings = wage - interest,
+                    assets = assets_seq(savings, asset_g, time_hz, asset_start))
+
+export(df, "../data/asset_development.csv" )
+
+```
+
+```{r expenses}
+cash_flow <- housing + consumption + amortization + interest + taxes + savings
+```
+

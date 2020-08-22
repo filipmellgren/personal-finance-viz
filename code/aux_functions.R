@@ -20,6 +20,6 @@ assets_seq <- function(savings, a_g, time_hz, a_start){
   for (year in 2:time_hz) {
     assets[year] <- assets[year-1] * exp(a_g[year]) + savings[year]
   }
-
+ 
   return(assets)
 }

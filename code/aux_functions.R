@@ -18,7 +18,8 @@ assets_seq <- function(savings, a_g, time_hz, a_start){
   assets <- numeric(time_hz)
   assets[1] <- a_start + savings[1]
   for (year in 2:time_hz) {
-    assets[year] <- assets[year-1] * (1+a_g) + savings[year]
+    assets[year] <- assets[year-1] * exp(a_g[year]) + savings[year]
   }
+
   return(assets)
 }

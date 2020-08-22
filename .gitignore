@@ -1,0 +1,7 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+data/asset_development.csv
+code/budget.Rmd
+code/savings.R

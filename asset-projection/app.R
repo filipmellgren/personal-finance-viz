@@ -12,7 +12,8 @@ library(tidyverse)
 library(rio)
 library(patchwork)
 source("../code/aux_functions.R")
-source("../code/savings.R")
+#source("../code/savings.R")
+
 #df <- import("../data/asset_development.csv")
 colorpal <- scale_color_brewer(type = 'qual', palette = 6)
 
@@ -28,11 +29,11 @@ ui <- fluidPage(
                 choices = c("coral", "turquoise"),
                 selected = "coral"),
             
-            sliderInput("start_wage", h3("Net wage (per month)"),
+            sliderInput("start_wage", h3("Starting net wage (per month)"),
                         min = 0, max = 100000, value = 20000),
             
             sliderInput("wage_growth", h3("Annual wage growth"),
-                        min = 0, max = 0.1, value = 0.03),
+                        min = 0, max = 0.1, value = 0.02),
             
             sliderInput("start_wealth", h3("Today's wealth"),
                         min = 0, max = 10^7, value = 7*10^5),
@@ -56,7 +57,7 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-    time_hz <- 35
+    time_hz <- 40
     df <- tibble(.rows = time_hz)
     output$line_plot <- renderPlot({ 
         # Year
@@ -67,7 +68,7 @@ server <- function(input, output) {
         
         # Consumption & housing
         df <- df %>% mutate(consumption = growth.seq(input$cons_growth, time_hz, input$consumption))
-        
+
         # CSN
         csn_cf <- import("../data/csn.csv") %>% 
             select(csn_cf) %>% filter(row_number()<=time_hz)
@@ -83,7 +84,12 @@ server <- function(input, output) {
         df <- df %>% mutate(savings = wage - consumption - csn_cf)
         
         # Assets
-        df <- df %>% mutate(assets = assets_seq(savings, 0.07, time_hz, input$start_wealth))
+        asset_g <- rep(0.07, time_hz)
+        df <- df %>% mutate(assets = assets_seq(savings, asset_g, time_hz, input$start_wealth))
+        
+        # Randomness
+        asset_sg <- rnorm(time_hz, mean = 0.07, sd = 0.15)
+        df <- df %>% mutate(assets = assets_seq(savings, asset_sg, time_hz, input$start_wealth))
         
         # Financial independence
         df <- df %>% mutate(findependence = 25*consumption)
@@ -96,11 +102,11 @@ server <- function(input, output) {
             theme_minimal() + 
             colorpal
         
-        plot.savings <- df %>% select(year, savings, csn_cf) %>% 
+        plot.savings <- df %>% select(year, savings, csn_cf, consumption) %>% 
             gather(key = "Series", value = "SEK", -year) %>% 
             ggplot(aes(x = year, y = SEK/12)) +
             geom_line(aes(color = Series)) + theme_minimal() +
-            labs(y = "Monthly savings") +
+            labs(y = "Monthly expenditure & saving") +
             colorpal
             
         plot.findep / plot.savings# TODO: add other information to the dashboard

@@ -20,26 +20,26 @@ colorpal <- scale_color_brewer(type = 'qual', palette = 6)
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
-    titlePanel("colored line plot"),
+    titlePanel("FIRE calculator"),
     
     sidebarLayout(
         sidebarPanel(
             selectInput("line_plot", 
-                label = "Choose a color",
+                label = "TEMP",
                 choices = c("coral", "turquoise"),
                 selected = "coral"),
             
             sliderInput("start_wage", h3("Starting net wage (per month)"),
-                        min = 0, max = 100000, value = 20000),
+                        min = 0, max = 100000, value = 0),
             
             sliderInput("wage_growth", h3("Annual wage growth"),
                         min = 0, max = 0.1, value = 0.02),
             
             sliderInput("start_wealth", h3("Today's wealth"),
-                        min = 0, max = 10^7, value = 7*10^5),
+                        min = 0, max = 10^7, value = 0),
             
             sliderInput("consumption", h3("Consumption & housing"),
-                        min = 0, max = 10^4, value = 7*10^3),
+                        min = 0, max = 10^4, value = 0),
             
             sliderInput("cons_growth", h3("Annual consumption growth"),
                         min = 0, max = 0.1, value = 0.05)
@@ -88,8 +88,8 @@ server <- function(input, output) {
         df <- df %>% mutate(assets = assets_seq(savings, asset_g, time_hz, input$start_wealth))
         
         # Randomness
-        asset_sg <- rnorm(time_hz, mean = 0.07, sd = 0.15)
-        df <- df %>% mutate(assets = assets_seq(savings, asset_sg, time_hz, input$start_wealth))
+        #asset_sg <- rnorm(time_hz, mean = 0.07, sd = 0.15)
+        #df <- df %>% mutate(assets = assets_seq(savings, asset_sg, time_hz, input$start_wealth))
         
         # Financial independence
         df <- df %>% mutate(findependence = 25*consumption)
@@ -105,11 +105,21 @@ server <- function(input, output) {
         plot.savings <- df %>% select(year, savings, csn_cf, consumption) %>% 
             gather(key = "Series", value = "SEK", -year) %>% 
             ggplot(aes(x = year, y = SEK/12)) +
-            geom_line(aes(color = Series)) + theme_minimal() +
+            geom_line(aes(color = Series), size = 1) + 
+            theme_minimal() +
             labs(y = "Monthly expenditure & saving") +
             colorpal
+        
+        FIRE_year <- df %>% select(assets, findependence, year) %>% 
+            filter(assets>findependence) %>% filter(year == min(year))
             
-        plot.findep / plot.savings# TODO: add other information to the dashboard
+        text <- glue::glue("Years to FIRE: ", FIRE_year$year)
+        
+        plot.number <- ggplot() + 
+            annotate("text", x = 4, y = 25, size=6, label = text) + 
+            theme_void()
+            
+        plot.findep / plot.savings / plot.number# TODO: add other information to the dashboard
         # Total debt (csn + mortgage)
         # Total debt to equity ratio
         
